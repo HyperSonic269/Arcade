@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pac-Man</title>
+  <style>
+    body { background: #121212; color: white; font-family: monospace; text-align: center; }
+    canvas { background: #000; border: 3px solid #1919A6; display: block; margin: 20px auto; }
+    a { color: #ff007f; text-decoration: none; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>🟡 Pac-Man</h1>
+  <p>Score: <span id="score">0</span> | Use Arrow Keys</p>
+  <canvas id="game" width="400" height="400"></canvas>
+  <a href="../index.html">← Back to Arcade</a>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const tileSize = 20;
+    let score = 0;
+
+    // 1 = Wall, 0 = Dot, 2 = Empty
+    const map = [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,0,1],
+      [1,0,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,0,1],
+      [1,1,1,1,0,1,1,1,2,1,1,2,1,1,1,0,1,1,1,1],
+      [1,0,0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0,1],
+      [1,0,1,1,0,1,2,1,1,2,2,1,1,2,1,0,1,1,0,1],
+      [1,0,0,0,0,0,2,1,2,2,2,2,1,2,0,0,0,0,0,1],
+      [1,0,1,1,0,1,2,1,1,1,1,1,1,2,1,0,1,1,0,1],
+      [1,0,0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0,1],
+      [1,1,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,0,1],
+      [1,0,0,1,0,0,0,0,0,2,2,0,0,0,0,0,1,0,0,1],
+      [1,1,0,1,0,1,0,1,1,1,1,1,1,0,1,0,1,0,1,1],
+      [1,0,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,0,1],
+      [1,0,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+
+    let pac = { x: 9, y: 15, dx: 0, dy: 0 };
+    let ghost = { x: 9, y: 9, dx: 1, dy: 0 };
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") { pac.dx = 0; pac.dy = -1; }
+      if (e.key === "ArrowDown") { pac.dx = 0; pac.dy = 1; }
+      if (e.key === "ArrowLeft") { pac.dx = -1; pac.dy = 0; }
+      if (e.key === "ArrowRight") { pac.dx = 1; pac.dy = 0; }
+    });
+
+    function update() {
+      if (map[pac.y + pac.dy][pac.x + pac.dx] !== 1) {
+        pac.x += pac.dx;
+        pac.y += pac.dy;
+      }
+      if (map[pac.y][pac.x] === 0) {
+        map[pac.y][pac.x] = 2;
+        score += 10;
+        document.getElementById("score").innerText = score;
+      }
+
+      // Simple ghost movement
+      const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+      if (map[ghost.y + ghost.dy][ghost.x + ghost.dx] === 1 || Math.random() < 0.2) {
+        const valid = dirs.filter(d => map[ghost.y + d.dy][ghost.x + d.dx] !== 1);
+        const choice = valid[Math.floor(Math.random() * valid.length)];
+        if (choice) { ghost.dx = choice.dx; ghost.dy = choice.dy; }
+      }
+      ghost.x += ghost.dx;
+      ghost.y += ghost.dy;
+
+      if (pac.x === ghost.x && pac.y === ghost.y) {
+        alert("Game Over! Final Score: " + score);
+        location.reload();
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let r = 0; r < 20; r++) {
+        for (let c = 0; c < 20; c++) {
+          if (map[r][c] === 1) {
+            ctx.fillStyle = "#1919A6";
+            ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+          } else if (map[r][c] === 0) {
+            ctx.fillStyle = "#FFB897";
+            ctx.beginPath();
+            ctx.arc(c * tileSize + 10, r * tileSize + 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      // Draw Pac-Man
+      ctx.fillStyle = "yellow";
+      ctx.beginPath();
+      ctx.arc(pac.x * tileSize + 10, pac.y * tileSize + 10, 8, 0.2 * Math.PI, 1.8 * Math.PI);
+      ctx.lineTo(pac.x * tileSize + 10, pac.y * tileSize + 10);
+      ctx.fill();
+
+      // Draw Ghost
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(ghost.x * tileSize + 10, ghost.y * tileSize + 10, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    setInterval(() => { update(); draw(); }, 180);
+  </script>
+</body>
+</html>

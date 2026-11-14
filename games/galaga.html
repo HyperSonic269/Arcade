@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Galaga</title>
+  <style>
+    body { background: #121212; color: white; font-family: monospace; text-align: center; }
+    canvas { background: #050510; border: 3px solid #00ffcc; display: block; margin: 20px auto; }
+    a { color: #ff007f; text-decoration: none; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>🚀 Galaga</h1>
+  <p>Score: <span id="score">0</span> | Left/Right to Move, Space to Shoot</p>
+  <canvas id="game" width="400" height="500"></canvas>
+  <a href="../index.html">← Back to Arcade</a>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    let score = 0;
+    let ship = { x: 185, y: 450, w: 30, h: 20 };
+    let bullets = [];
+    let enemies = [];
+    let enemyDir = 2;
+    let keys = {};
+
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 6; c++) {
+        enemies.push({ x: 50 + c * 50, y: 40 + r * 40, w: 25, h: 20, alive: true });
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      keys[e.key] = true;
+      if (e.key === " ") bullets.push({ x: ship.x + 13, y: ship.y, w: 4, h: 10 });
+    });
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Move Ship
+      if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 5;
+      if (keys["ArrowRight"] && ship.x < canvas.width - ship.w) ship.x += 5;
+
+      // Draw Ship
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.moveTo(ship.x + 15, ship.y);
+      ctx.lineTo(ship.x, ship.y + 20);
+      ctx.lineTo(ship.x + 30, ship.y + 20);
+      ctx.fill();
+
+      // Move & Draw Bullets
+      ctx.fillStyle = "#00ffcc";
+      bullets.forEach((b, i) => {
+        b.y -= 7;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        if (b.y < 0) bullets.splice(i, 1);
+      });
+
+      // Move & Draw Enemies
+      let hitEdge = false;
+      enemies.forEach(en => {
+        if (!en.alive) return;
+        en.x += enemyDir;
+        if (en.x <= 10 || en.x + en.w >= canvas.width - 10) hitEdge = true;
+
+        ctx.fillStyle = "#ff007f";
+        ctx.fillRect(en.x, en.y, en.w, en.h);
+
+        // Collision with bullets
+        bullets.forEach((b, bi) => {
+          if (b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h && b.y + b.h > en.y) {
+            en.alive = false;
+            bullets.splice(bi, 1);
+            score += 100;
+            document.getElementById("score").innerText = score;
+          }
+        });
+
+        if (en.y + en.h >= ship.y) {
+          alert("Aliens Invaded! Game Over.");
+          location.reload();
+        }
+      });
+
+      if (hitEdge) {
+        enemyDir *= -1;
+        enemies.forEach(en => en.y += 15);
+      }
+
+      if (enemies.every(en => !en.alive)) {
+        alert("Wave Cleared! You Win!");
+        location.reload();
+      }
+
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

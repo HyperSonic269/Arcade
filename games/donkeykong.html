@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Donkey Kong</title>
+  <style>
+    body { background: #121212; color: white; font-family: monospace; text-align: center; }
+    canvas { background: #000; border: 3px solid #ff4500; display: block; margin: 20px auto; }
+    a { color: #ff007f; text-decoration: none; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>🛢️ Donkey Kong</h1>
+  <p>Jump the barrels and reach the yellow goal! (Arrows + Space)</p>
+  <canvas id="game" width="400" height="450"></canvas>
+  <a href="../index.html">← Back to Arcade</a>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 30, y: 400, w: 20, h: 25, vx: 0, vy: 0, grounded: false };
+    let barrels = [];
+    let keys = {};
+    let frame = 0;
+
+    const platforms = [
+      { x: 0, y: 430, w: 400, h: 15 },
+      { x: 0, y: 330, w: 320, h: 15 },
+      { x: 80, y: 230, w: 320, h: 15 },
+      { x: 0, y: 130, w: 320, h: 15 }
+    ];
+    const goal = { x: 20, y: 95, w: 25, h: 35 };
+
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      frame++;
+
+      // Player Movement
+      if (keys["ArrowLeft"]) player.vx = -3;
+      else if (keys["ArrowRight"]) player.vx = 3;
+      else player.vx = 0;
+
+      if ((keys["ArrowUp"] || keys[" "]) && player.grounded) {
+        player.vy = -8.5;
+        player.grounded = false;
+      }
+
+      player.vy += 0.4; // Gravity
+      player.x += player.vx;
+      player.y += player.vy;
+
+      // Screen bounds
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+
+      // Platform collisions
+      player.grounded = false;
+      platforms.forEach(p => {
+        ctx.fillStyle = "#b22222";
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+
+        if (player.x < p.x + p.w && player.x + player.w > p.x &&
+            player.y + player.h >= p.y && player.y + player.h <= p.y + p.h + player.vy && player.vy >= 0) {
+          player.y = p.y - player.h;
+          player.vy = 0;
+          player.grounded = true;
+        }
+      });
+
+      // Spawn Barrels
+      if (frame % 110 === 0) {
+        barrels.push({ x: 80, y: 110, r: 8, vx: 2.5, vy: 0 });
+      }
+
+      // Update & Draw Barrels
+      barrels.forEach((b, i) => {
+        b.vy += 0.4;
+        b.x += b.vx;
+        b.y += b.vy;
+
+        platforms.forEach(p => {
+          if (b.x > p.x && b.x < p.x + p.w && b.y + b.r >= p.y && b.y + b.r <= p.y + p.h + b.vy) {
+            b.y = p.y - b.r;
+            b.vy = 0;
+          }
+        });
+
+        if (b.x <= b.r || b.x >= canvas.width - b.r) b.vx *= -1;
+        if (b.y > canvas.height) barrels.splice(i, 1);
+
+        ctx.fillStyle = "#cd853f";
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hit player check
+        if (Math.hypot(player.x + 10 - b.x, player.y + 12 - b.y) < b.r + 10) {
+          alert("Hit by a barrel! Game Over.");
+          location.reload();
+        }
+      });
+
+      // Draw Goal & Donkey Kong stand-in
+      ctx.fillStyle = "gold";
+      ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+      ctx.fillStyle = "#8b4513";
+      ctx.fillRect(65, 90, 35, 40);
+
+      // Draw Player
+      ctx.fillStyle = "#00ffcc";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      // Win check
+      if (player.x < goal.x + goal.w && player.x + player.w > goal.x && player.y < goal.y + goal.h) {
+        alert("You reached the top! You Win!");
+        location.reload();
+      }
+
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>
